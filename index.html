@@ -1,0 +1,1134 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>校事會議：雙重宇宙 (Dual Universe)</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: 'Noto Sans TC', 'Microsoft JhengHei', sans-serif;
+            overflow: hidden;
+            touch-action: none;
+        }
+        canvas {
+            background-color: #f4f4f4;
+            box-shadow: 0 0 40px rgba(255, 255, 255, 0.15);
+            width: 100%; 
+            height: auto;
+            max-width: 900px;
+            max-height: 100vh;
+            object-fit: contain;
+        }
+    </style>
+</head>
+<body>
+
+<canvas id="gameCanvas" width="900" height="600"></canvas>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // ==========================================
+    // 資料庫區：120 個獨立關卡 (無重複)
+    // ==========================================
+
+    // --- 1. 六道輪迴版 (Normal/Satire Mode) ---
+    // 側重行政壓迫、法規刁難、家長投訴的真實感
+    const casesNormal = {
+        'A': [ // A. 眼神殺人案 (不當管教)
+            { stage: "Stage 1/10", investigator: "匿名檢舉信", dialogue: "家長投訴你對學生小明「咆哮」。請解釋你的音量控制。", options: [{text:"走廊很吵，我只是提高音量。", verdict:"【聲學霸凌】將環境噪音作為藉口，實則施展「聲波衝擊」。", sanityCost:10}, {text:"我用了丹田發聲。", verdict:"【過度演繹】教室非歌劇院。忽視觀眾（學生）聽覺權益。", sanityCost:10}, {text:"我當時確實生氣了。", verdict:"【情緒恐攻】承認情緒失控。將負面能量無差別釋放。", sanityCost:10}] },
+            { stage: "Stage 2/10", investigator: "教務主任", dialogue: "學生表示你的眼神「像要殺人」。你當時看哪裡？", options: [{text:"我看著他的眼睛展現真誠。", verdict:"【視線侵犯】直視雙眼視為挑釁。對弱勢學生進行視覺壓迫。", sanityCost:10}, {text:"我刻意看向別處。", verdict:"【冷暴力】無視學生存在，典型的「視覺排擠」。", sanityCost:10}, {text:"我在翻白眼。", verdict:"【微表情羞辱】眼白比例過高，充滿階級傲慢。", sanityCost:10}] },
+            { stage: "Stage 3/10", investigator: "家長代表", dialogue: "你把作業簿「丟」在桌上。家長認為這是暴力。", options: [{text:"那是自由落體。", verdict:"【物理暴力】缺乏對牛頓定律的溫柔。", sanityCost:10}, {text:"我手上有粉筆灰。", verdict:"【衛生藉口】顯示衛生習慣堪憂。", sanityCost:10}, {text:"好，我下次雙手奉上。", verdict:"【被動攻擊】意圖以「過度禮貌」進行反諷。", sanityCost:10}] },
+            { stage: "Stage 4/10", investigator: "外聘律師", dialogue: "聯絡簿用紅筆寫「請訂正」。家長認為像血。", options: [{text:"紅筆是為了醒目。", verdict:"【視覺暴力】忽視色彩心理學對家長的衝擊。", sanityCost:10}, {text:"剛好只剩紅筆。", verdict:"【資源匱乏】將物資短缺轉嫁為家長心理負擔。", sanityCost:10}, {text:"以後用粉紅色。", verdict:"【性別刻板】對嚴肅教育場域的輕浮化。", sanityCost:10}] },
+            { stage: "Stage 5/10", investigator: "人本專家", dialogue: "學生打瞌睡你讓他站著。這是體罰。", options: [{text:"怕他撞到頭。", verdict:"【剝奪睡眠】學生想睡是生理需求，你還強迫其對抗地心引力。", sanityCost:10}, {text:"只站5分鐘。", verdict:"【微量酷刑】5分鐘的痛苦也是痛苦。", sanityCost:10}, {text:"我也陪他站。", verdict:"【共犯結構】斯德哥爾摩症候群誘導。", sanityCost:10}] },
+            { stage: "Stage 6/10", investigator: "心理師", dialogue: "錄音顯示你嘆了一口氣。被解讀為「放棄學生」。", options: [{text:"我嘆氣我教不好。", verdict:"【情緒勒索】你的自責讓學生感到內疚。", sanityCost:10}, {text:"缺氧深呼吸。", verdict:"【生理藉口】肺活量訓練請去健身房。", sanityCost:10}, {text:"這也要管？", verdict:"【態度傲慢】視教育專業為神聖不可侵犯。", sanityCost:10}] },
+            { stage: "Stage 7/10", investigator: "醫療專家", dialogue: "規定上課不能隨意裝水。導致「脫水恐懼」。", options: [{text:"下課可以裝啊。", verdict:"【缺乏彈性】生理需求不分上下課。", sanityCost:10}, {text:"走動會干擾。", verdict:"【威權中心】教學流暢度置於腎臟健康之上。", sanityCost:10}, {text:"那隨便喝。", verdict:"【秩序崩壞】放任學生遊蕩。", sanityCost:10}] },
+            { stage: "Stage 8/10", investigator: "調查小組", dialogue: "小明說看到你就想吐。生物性霸凌。", options: [{text:"我長得醜錯了嗎？", verdict:"【自我羞辱】不是美醜問題，是氣場有毒。", sanityCost:10}, {text:"那是他腸胃炎。", verdict:"【推卸責任】缺乏對身心症的認知。", sanityCost:10}, {text:"我也想吐。", verdict:"【惡意回擊】師生關係徹底破裂。", sanityCost:10}] },
+            { stage: "Stage 9/10", investigator: "校長", dialogue: "家長說只要你承認有病並掛號，就不告你。", options: [{text:"我很健康！", verdict:"【缺乏病識感】否認更加深了疑慮。", sanityCost:10}, {text:"好，我去看醫生。", verdict:"【確診不適任】既然有病，就不適合留任。", sanityCost:10}, {text:"家長要不要一起去？", verdict:"【公然挑釁】向火焰投擲汽油。", sanityCost:10}] },
+            { stage: "Stage 10/10", investigator: "教評會", dialogue: "你的呼吸、眼神、嘆氣都有罪。", options: [{text:"無言以對...", verdict:"【判決：解聘】你的沉默代表默認。", sanityCost:100}, {text:"冤枉啊！", verdict:"【判決：終身解聘】喊冤干擾會議秩序。", sanityCost:100}, {text:"眼神死。", verdict:"【判決：送辦】又用眼神霸凌委員！", sanityCost:100}] }
+        ],
+        'B': [ // B. 恐怖情人案 (性平疑似)
+            { stage: "Stage 1/10", investigator: "性平委員", dialogue: "你在班群傳「早安，我的寶貝學生們」。家長認為這是性騷擾。", options: [{text:"表達親切。", verdict:"【界線模糊】師生關係情侶化。「寶貝」是專屬親密用語。", sanityCost:10}, {text:"那是長輩圖複製貼上。", verdict:"【敷衍塞責】對情感教育態度廉價，且有散播垃圾訊息之嫌。", sanityCost:10}, {text:"好，以後叫這群死小孩。", verdict:"【情緒反彈】從溺愛轉為仇恨。你的情緒光譜只有兩極嗎？", sanityCost:10}] },
+            { stage: "Stage 2/10", investigator: "心理師", dialogue: "學生考好，你摸了他的頭。這是嚴重的肢體界線逾越。", options: [{text:"我看他像自己孩子。", verdict:"【假性親屬】將學生幼體化。利用「父/母愛」包裝肢體接觸慾望。", sanityCost:10}, {text:"我只摸了兩秒。", verdict:"【量化詭辯】騷擾不以時間長短論定。那一秒，靈魂已受侵犯。", sanityCost:10}, {text:"那我下次隔空摸。", verdict:"【意念騷擾】手沒到，意念到了。這是量子力學層級的猥褻。", sanityCost:10}] },
+            { stage: "Stage 3/10", investigator: "家長代表", dialogue: "你請特定幾位學生喝珍奶。這是誘捕（Grooming）。", options: [{text:"那是獎勵幹部。", verdict:"【差別待遇】利用物資建立特權階級，培養小圈圈。", sanityCost:10}, {text:"我有收錢。", verdict:"【非法交易】利用職權進行商業行為。你是老師還是代購？", sanityCost:10}, {text:"單純天氣熱。", verdict:"【糖衣毒藥】利用高糖飲料降低戒心。典型的誘拐犯手法。", sanityCost:10}] },
+            { stage: "Stage 4/10", investigator: "交通隊", dialogue: "下大雨，你順路載學生去捷運站。密閉空間獨處！", options: [{text:"難道看他淋雨？", verdict:"【偽善】為了展現廉價愛心而犧牲界線。淋雨會濕，上車會髒。", sanityCost:10}, {text:"我有開窗戶。", verdict:"【空氣流通無效】窗戶開著不代表費洛蒙會散去。", sanityCost:10}, {text:"我叫他坐後座。", verdict:"【Uber化】把師生關係降級為司機乘客。且後座更具隱密性。", sanityCost:10}] },
+            { stage: "Stage 5/10", investigator: "美感專家", dialogue: "你稱讚女學生「今天穿裙子很可愛」。這是男性凝視。", options: [{text:"純粹美學欣賞。", verdict:"【視線暴力】你的視線掃描了學生的身體。這是權力者的審視。", sanityCost:10}, {text:"那我以後說很醜。", verdict:"【人身攻擊】如果不性騷擾就只能羞辱？社交技能匱乏。", sanityCost:10}, {text:"我以後閉嘴。", verdict:"【冷暴力】用沉默來抗議性平規範？這是消極抵抗。", sanityCost:10}] },
+            { stage: "Stage 6/10", investigator: "資安專家", dialogue: "學生半夜IG私訊你，你秒回。這代表你一直在等他。", options: [{text:"我剛好在滑手機。", verdict:"【手機成癮】半夜不睡覺滑手機，作息混亂，如何以身作則？", sanityCost:10}, {text:"怕學生有急事。", verdict:"【救世主情結】以為自己是超人？過度介入私生活。", sanityCost:10}, {text:"以後我不讀不回。", verdict:"【見死不救】若學生真的求救而你無視，你就是共犯。", sanityCost:10}] },
+            { stage: "Stage 7/10", investigator: "衛生組長", dialogue: "學生冷，你把外套借給他穿。這是「氣味標記」。", options: [{text:"怕他感冒。", verdict:"【體液交換】外套沾有你的皮屑與汗水。間接生物接觸。", sanityCost:10}, {text:"那是我洗乾淨的。", verdict:"【預謀犯案】隨身攜帶乾淨外套準備給學生？心機深沉。", sanityCost:10}, {text:"叫他自己跳繩取暖。", verdict:"【冷血虐待】忽視生理痛苦，還加以體能折磨。", sanityCost:10}] },
+            { stage: "Stage 8/10", investigator: "輔導主任", dialogue: "你在走廊跟學生聊天聊了20分鐘。這是「情感勞務過度」。", options: [{text:"他在哭，我安慰他。", verdict:"【趁虛而入】學生脆弱時是你下手的最好時機？", sanityCost:10}, {text:"我們在討論功課。", verdict:"【學術藉口】哪一科功課需要講到20分鐘？公事包裝私情。", sanityCost:10}, {text:"下次我設鬧鐘5分鐘。", verdict:"【敷衍了事】把情感交流量化。把學生當工廠零件嗎？", sanityCost:10}] },
+            { stage: "Stage 9/10", investigator: "校長", dialogue: "學生卡片寫「最愛老師了」。證據確鑿。", options: [{text:"那是童言童語。", verdict:"【自我催眠】你享受這種被崇拜的快感吧？滿足情感空虛。", sanityCost:10}, {text:"我把它退回去了。", verdict:"【踐踏心意】當眾退回，讓學生崩潰。情商低到令人髮指。", sanityCost:10}, {text:"我把它上繳給學校。", verdict:"【行政麻煩】你把這種尷尬的東西丟給行政端？", sanityCost:10}] },
+            { stage: "Stage 10/10", investigator: "教評會", dialogue: "你是一個以愛為名的變態。", options: [{text:"我是冤枉的！", verdict:"【判決：終身解聘】變態通常不覺得自己變態。否認無效。", sanityCost:100}, {text:"我只是想關心...", verdict:"【判決：解聘】你的關心是毒藥。請遠離校園。", sanityCost:100}, {text:"想抱抱大家。", verdict:"【判決：報警】保安！他又要進行肢體接觸了！", sanityCost:100}] }
+        ],
+        'C': [ // C. 薪水小偷案 (教學不力)
+            { stage: "Stage 1/10", investigator: "教務主任", dialogue: "巡堂發現你上課只帶課本，沒帶教案。家長質疑你「吃老本」。", options: [{text:"都在我腦袋裡了。", verdict:"【唯心論】看不見的教案就是不存在。你的腦袋沒通過ISO認證。", sanityCost:10}, {text:"我都用電子書。", verdict:"【3C依賴】一旦停電你就失能了嗎？缺乏板書職人精神。", sanityCost:10}, {text:"好，我下次印一疊紙。", verdict:"【破壞環保】為了形式主義浪費雨林資源。北極熊恨你。", sanityCost:10}] },
+            { stage: "Stage 2/10", investigator: "視聽組長", dialogue: "你上課放了15分鐘的YouTube影片。這是「薪水小偷」的行為。", options: [{text:"那是相關教材。", verdict:"【教學外包】你把責任外包給網紅？學生繳學費給YouTuber就好。", sanityCost:10}, {text:"我喉嚨痛休息一下。", verdict:"【身體管理不佳】職業選手不該隨便受傷。不該轉嫁給學生。", sanityCost:10}, {text:"學生喜歡看影片。", verdict:"【自暴自棄】承認自己比不上螢幕？失敗主義。", sanityCost:10}] },
+            { stage: "Stage 3/10", investigator: "數據分析師", dialogue: "你們班這次段考雙峰現象嚴重。這代表你「放棄後段學生」。", options: [{text:"前段太強，後段太混。", verdict:"【階級複製】將成績歸咎於天資，忽略教育翻轉階級的功能。", sanityCost:10}, {text:"題目出太難了。", verdict:"【怪罪體制】不檢討自己反而怪命題老師？不會駛船嫌溪彎。", sanityCost:10}, {text:"我會幫後段的補救。", verdict:"【空頭支票】亡羊補牢，羊都被你餓死了。早知如此何必當初？", sanityCost:10}] },
+            { stage: "Stage 4/10", investigator: "家長會長", dialogue: "家長Line你，你過了3小時才回。家長覺得被冷落。", options: [{text:"我在上課啊！", verdict:"【藉口】上課重要還是家長的心情重要？（行政端認為是後者）。", sanityCost:10}, {text:"我在睡覺。", verdict:"【怠惰】下班就可以睡覺嗎？教育是24小時的志業。", sanityCost:10}, {text:"我沒開通知。", verdict:"【蓄意失聯】在這個資訊時代選擇斷線，是對親師關係的冷處理。", sanityCost:10}] },
+            { stage: "Stage 5/10", investigator: "教學組長", dialogue: "作文你只給分數和「閱」，沒有寫評語。家長認為這很敷衍。", options: [{text:"因為寫得太爛，無話可說。", verdict:"【言語羞辱】此處無聲勝有聲的羞辱。打擊學生創作熱情。", sanityCost:10}, {text:"我有口頭講評。", verdict:"【死無對證】口說無憑。沒有白紙黑字，怎麼證明你有上班？", sanityCost:10}, {text:"好，我下次寫滿評語。", verdict:"【紅字恐懼】滿滿的紅字會造成學生密集恐懼症。", sanityCost:10}] },
+            { stage: "Stage 6/10", investigator: "生教組長", dialogue: "經過你們班很吵。這代表你「班級經營失敗」。", options: [{text:"我們在分組討論。", verdict:"【假性熱絡】把吵鬧美化為討論？這只是失序的遮羞布。", sanityCost:10}, {text:"學生太活潑了。", verdict:"【推卸責任】怪罪學生屬性？優秀的馴獸師能駕馭任何野獸。", sanityCost:10}, {text:"那我叫他們閉嘴。", verdict:"【威權復辟】又回到不當管教的迴圈？只會叫人閉嘴，無能。", sanityCost:10}] },
+            { stage: "Stage 7/10", investigator: "輔導教授", dialogue: "你的教法十年如一日。沒有使用平板、沒有AR/VR。你是原始人嗎？", options: [{text:"粉筆是最穩定的工具。", verdict:"【食古不化】你的堅持是對科技進步的侮辱。阻礙通往元宇宙。", sanityCost:10}, {text:"我不會用那些軟體。", verdict:"【專業不足】數位原住民遇到數位難民。請去職訓局重修。", sanityCost:10}, {text:"用平板他們都在玩。", verdict:"【因噎廢食】因為怕噎死就不吃飯？引導無方，別怪工具。", sanityCost:10}] },
+            { stage: "Stage 8/10", investigator: "輔導主任", dialogue: "你的輔導紀錄B表寫得太簡單，只有「晤談」兩個字。這是偽造文書。", options: [{text:"內容涉及隱私不便寫。", verdict:"【隱匿情報】行政端需要掌握一切。你的保密就是不忠誠。", sanityCost:10}, {text:"真的有談，只是懶得寫。", verdict:"【行政怠惰】承認懶惰？記過的最直接證據。感謝你的誠實。", sanityCost:10}, {text:"我現在補寫。", verdict:"【事後諸葛】回溯補寫是違法的。你的記憶可信度已被打折。", sanityCost:10}] },
+            { stage: "Stage 9/10", investigator: "人事主任", dialogue: "這學期有兩個學生轉學。這是對你教學品質的「用腳投票」。", options: [{text:"他們是搬家。", verdict:"【自我安慰】搬家只是藉口。孟母三遷是為了躲避你。", sanityCost:10}, {text:"轉走也好，班上比較安靜。", verdict:"【心態偏差】把學生流失當作解脫？把教育當淘汰賽嗎？", sanityCost:10}, {text:"我會檢討。", verdict:"【無效檢討】現在檢討有什麼用？你的存在本身就是負面廣告。", sanityCost:10}] },
+            { stage: "Stage 10/10", investigator: "教評會", dialogue: "我們認定你「不能勝任工作」。這不是你的錯，是你入錯行了。", options: [{text:"那給我資遣費。", verdict:"【判決：資遣】好的，拿著這筆錢，去禍害其他行業吧。", sanityCost:100}, {text:"我還可以去哪？", verdict:"【判決：資遣】不知道，但只要不是學校都好。去當啞巴吧。", sanityCost:100}, {text:"謝謝指教。", verdict:"【判決：資遣】不用謝，這是我們為了下一代做的功德。", sanityCost:100}] }
+        ],
+        'D': [ // D. 數位毒品案 (數位學習)
+            { stage: "Stage 1/10", investigator: "家長聯盟", dialogue: "你推廣生生用平板，家長投訴孩子回家都在玩iPad。你是「數位毒梟」。", options: [{text:"課堂都有MDM監控。", verdict:"【監控失靈】道高一尺魔高一丈。低估學生破解能力。", sanityCost:10}, {text:"這是數位學習趨勢。", verdict:"【盲目跟風】拿趨勢當擋箭牌？你只是科技廠商的推銷員。", sanityCost:10}, {text:"回家不歸我管。", verdict:"【切割責任】教育是全方位的。你開啟潘朵拉盒子卻不想負責？", sanityCost:10}] },
+            { stage: "Stage 2/10", investigator: "護眼協會", dialogue: "班上近視率上升。家長認為是你讓學生看太多螢幕。", options: [{text:"我們有遵照3010護眼原則。", verdict:"【形式主義】你在課堂上真的有拿計時器倒數嗎？紙上談兵。", sanityCost:10}, {text:"回家看手機才是主因。", verdict:"【推卸給家庭】千錯萬錯都是家長的錯？沒做好視力守門員。", sanityCost:10}, {text:"我都用抗藍光貼膜。", verdict:"【偽科學】貼膜能擋多少？缺乏醫學專業，進行人體實驗。", sanityCost:10}] },
+            { stage: "Stage 3/10", investigator: "學務主任", dialogue: "學生在你的Google Classroom留言區罵人。你身為管理員沒刪除。", options: [{text:"半夜留言我沒看到。", verdict:"【管理疏失】數位平台是24小時的。開了平台就要當保全。", sanityCost:10}, {text:"這是言論自由教育。", verdict:"【放任仇恨】把霸凌美化為言論自由？鍵盤殺手的幫兇。", sanityCost:10}, {text:"我立刻關閉留言區。", verdict:"【因噎廢食】遇到問題就封鎖？獨裁者思維，剝奪互動權。", sanityCost:10}] },
+            { stage: "Stage 4/10", investigator: "總務主任", dialogue: "學生被平板車的充電線絆倒。這是嚴重的「校園安危事件」。", options: [{text:"叫他走路看路。", verdict:"【檢討受害者】環境不安全卻怪使用者？教室佈置充滿殺機。", sanityCost:10}, {text:"經費不足沒法走暗線。", verdict:"【哭窮】把行政怠惰歸咎於經費。為什麼不用薪水買壓條？", sanityCost:10}, {text:"以後不准充電。", verdict:"【邏輯死亡】沒電怎麼學習？解決問題的方法是消滅工具。", sanityCost:10}] },
+            { stage: "Stage 5/10", investigator: "消保官", dialogue: "你播放教學影片時跳出「投資詐騙」廣告。家長認為你置入性行銷。", options: [{text:"我沒買Premium會員。", verdict:"【客家精神誤用】省這點錢？讓學生接觸詐騙資訊，因小失大。", sanityCost:10}, {text:"我按掉很快。", verdict:"【視覺暫留】3秒鐘的廣告已植入潛意識。你是資本主義魁儡。", sanityCost:10}, {text:"這是機會教育教防詐。", verdict:"【硬拗】在課堂上賭運氣？萬一跳出的是色情廣告怎麼辦？", sanityCost:10}] },
+            { stage: "Stage 6/10", investigator: "學術倫理會", dialogue: "全班讀書心得都用ChatGPT寫。你給了滿分。你分不出來嗎？", options: [{text:"AI寫得比學生好。", verdict:"【貶低人類】承認機器優於人類？加速人類智慧退化。", sanityCost:10}, {text:"這是訓練AI溝通力。", verdict:"【學術舞弊】把作弊包裝成能力指標。讓「誠實」一文不值。", sanityCost:10}, {text:"我改得眼花沒看。", verdict:"【怠忽職守】連作業是不是人寫的都看不出來，AI應該取代你。", sanityCost:10}] },
+            { stage: "Stage 7/10", investigator: "人權團體", dialogue: "你派Kahoot作業，但小明家沒網路。這是「階級歧視」。", options: [{text:"請他去超商連WIFI。", verdict:"【何不食肉糜】不知民間疾苦。強迫學生在吵雜環境學習。", sanityCost:10}, {text:"借他學校載具。", verdict:"【保管責任】若弄丟誰賠？把巨大賠償壓力丟給弱勢家庭。", sanityCost:10}, {text:"那他寫紙本。", verdict:"【標籤化】全班都玩平板，只有他寫紙本。公開標記貧窮。", sanityCost:10}] },
+            { stage: "Stage 8/10", investigator: "資訊組長", dialogue: "你上課開4K影片，導致全校網路癱瘓。自私。", options: [{text:"追求高畫質教學。", verdict:"【頻寬殺手】為了畫質犧牲全校效率。公文都發不出去。", sanityCost:10}, {text:"學校網路太爛。", verdict:"【批評基礎建設】嫌棄國家建設？不想著節流（降畫質）。", sanityCost:10}, {text:"我改用自己的5G。", verdict:"【資安破口】私接熱點，繞過資安防護網。駭客的入口。", sanityCost:10}] },
+            { stage: "Stage 9/10", investigator: "檔案局", dialogue: "你把學生成績存在Google雲端，結果誤刪。家長要告你。", options: [{text:"我有備份在隨身碟。", verdict:"【個資外洩】隨身碟易遺失且有病毒。將個資帶離安全網域。", sanityCost:10}, {text:"叫學生重寫就好。", verdict:"【傲慢】把錯誤成本轉嫁給學生的勞力。你是慣老闆嗎？", sanityCost:10}, {text:"這是系統BUG。", verdict:"【推給Google】Google市值幾兆，會針對你？人為操作失誤。", sanityCost:10}] },
+            { stage: "Stage 10/10", investigator: "教評會", dialogue: "你推廣的不是數位學習，是「數位災難」。", options: [{text:"我只是想創新...", verdict:"【判決：解聘】創新是痛苦的，尤其是對行政端。回歸石器時代。", sanityCost:100}, {text:"AI會取代你們！", verdict:"【判決：終身解聘】在AI取代我們之前，我們先取代你。", sanityCost:100}, {text:"登出。", verdict:"【判決：封鎖IP】你的帳號已被註銷。現實世界也沒你的位置。", sanityCost:100}] }
+        ],
+        'E': [ // E. 私德審查案 (下班人生)
+            { stage: "Stage 1/10", investigator: "社區媽媽", dialogue: "有人看到你週五晚上在7-11買了兩手啤酒。為人師表竟然酗酒？", options: [{text:"週末放鬆一下。", verdict:"【酒精成癮】將快樂建築在酒精上。學生會模仿你借酒澆愁。", sanityCost:10}, {text:"那是幫家人買的。", verdict:"【代購共犯】幫家人買？還是幫未成年買？誠信已打折扣。", sanityCost:10}, {text:"這是我的下班時間。", verdict:"【角色混亂】老師沒有下班時間。你的靈魂24小時屬於道德高地。", sanityCost:10}] },
+            { stage: "Stage 2/10", investigator: "道德重整會", dialogue: "你的IG私人帳號（雖設不公開）流出一張泳裝照。家長覺得「太裸露」。", options: [{text:"我去海邊游泳啊。", verdict:"【有礙觀瞻】游泳可以穿潛水衣。暴露肉體會引發性幻想。", sanityCost:10}, {text:"那是我的隱私。", verdict:"【私德不檢】既然當老師，身體就是公共財（誤）。形象管理零分。", sanityCost:10}, {text:"我很健康。", verdict:"【過度自信】家長不覺得健康，覺得是色情。美感是主觀的。", sanityCost:10}] },
+            { stage: "Stage 3/10", investigator: "單身公害防治組", dialogue: "學生在Tinder滑到你。你竟然在網路上「約炮」？", options: [{text:"我是找真愛。", verdict:"【動機不純】在肉慾橫流的平台上找真愛？判斷力低落。", sanityCost:10}, {text:"那是詐騙盜圖。", verdict:"【資安破口】照片為何容易被盜？社群管理鬆散。", sanityCost:10}, {text:"老師不能談戀愛嗎？", verdict:"【錯誤示範】可以戀愛，但不能用App。應經由媒妁之言。", sanityCost:10}] },
+            { stage: "Stage 4/10", investigator: "網路巡邏", dialogue: "你在某新聞粉專留言「白癡政策」。用詞粗俗。", options: [{text:"我是一時氣憤。", verdict:"【情緒失控】在公開網路暴怒，EQ低落。如何教學生情緒管理？", sanityCost:10}, {text:"這是言論自由。", verdict:"【濫用自由】師道尊嚴高於言論自由。你的髒話代表教育界墮落。", sanityCost:10}, {text:"帳號被盜。", verdict:"【老梗】每次出事都被盜？你當調查小組是白癡嗎？", sanityCost:10}] },
+            { stage: "Stage 5/10", investigator: "人體藝術審查", dialogue: "游泳課時，學生看到你腳踝有微小刺青。這是黑道象徵？", options: [{text:"那是藝術圖騰。", verdict:"【次文化入侵】將邊緣次文化帶入校園。家長擔心你混幫派。", sanityCost:10}, {text:"貼紙貼的。", verdict:"【欺騙師生】身為老師還玩貼紙？幼稚且不誠實。", sanityCost:10}, {text:"我去雷射掉。", verdict:"【身體自主權喪失】為了工作毀壞皮膚。顯示你為五斗米折腰。", sanityCost:10}] },
+            { stage: "Stage 6/10", investigator: "禮儀協會", dialogue: "你在路邊攤吃麵「吸很大聲」還翹腳。被家長拍到。", options: [{text:"吃麵本來就要出聲。", verdict:"【國際禮儀無知】這裡是台灣，不是日本。破壞對優雅的想像。", sanityCost:10}, {text:"我很餓。", verdict:"【動物本能】屈服於食慾而忘卻禮義廉恥。衣食足而知榮辱。", sanityCost:10}, {text:"以後我都外帶。", verdict:"【製造垃圾】增加塑膠垃圾，破壞環境。怎麼做都是錯。", sanityCost:10}] },
+            { stage: "Stage 7/10", investigator: "選委會", dialogue: "你的背包上掛了某候選人的小物。違反行政中立？", options: [{text:"這是個人物品。", verdict:"【校園政治化】帶入校園就是宣傳。意圖對未成年人政治洗腦。", sanityCost:10}, {text:"學生送我的。", verdict:"【收受賄賂】收受政治相關禮品，情節更嚴重。樁腳從小培養？", sanityCost:10}, {text:"我只是覺得可愛。", verdict:"【政治敏感度低】對政治符號毫無警覺。無知比惡意更可怕。", sanityCost:10}] },
+            { stage: "Stage 8/10", investigator: "人事室", dialogue: "有人看到你假日開Uber。公務員不得兼職！", options: [{text:"那是載朋友。", verdict:"【瓜田李下】開著車載人就有嫌疑。你應該待在家裡備課。", sanityCost:10}, {text:"體驗社會生活。", verdict:"【不務正業】你的正業是教書。體驗社會請當志工，不要賺錢。", sanityCost:10}, {text:"薪水不夠用。", verdict:"【哭窮損形象】暗示國家待遇微薄？破壞政府形象，動搖國本。", sanityCost:10}] },
+            { stage: "Stage 9/10", investigator: "反賭博聯盟", dialogue: "你在彩券行刮刮樂，表情猙獰。這是賭博行為。", options: [{text:"做公益。", verdict:"【投機心態】妄想一夜致富，不想腳踏實地。心態會傳染。", sanityCost:10}, {text:"只是好玩。", verdict:"【沈迷逸樂】在公眾場合沈迷於機率遊戲，有損師表莊重。", sanityCost:10}, {text:"中獎捐出去。", verdict:"【偽善】還沒中就在畫大餅。誠實面對你的貪婪吧。", sanityCost:10}] },
+            { stage: "Stage 10/10", investigator: "教評會", dialogue: "結論：你的私生活混亂，不配為人師表。", options: [{text:"我也有人權！", verdict:"【判決：解聘】老師只有責任，沒有人權。你入錯行了。", sanityCost:100}, {text:"我要去賣雞排。", verdict:"【判決：資遣】職業不分貴賤，但雞排老闆比你更受尊重。", sanityCost:100}, {text:"下輩子不當老師。", verdict:"【判決：解聘】這輩子先結算。慢走不送。", sanityCost:100}] }
+        ],
+        'F': [ // F. 貪汙圖利案 (錢的糾紛)
+            { stage: "Stage 1/10", investigator: "政風室", dialogue: "你把班費現金放在抽屜裡。這是「公款私存」。", options: [{text:"方便隨時支出。", verdict:"【帳務不清】方便就是隨便。沒存專戶，難保不會買便當。", sanityCost:10}, {text:"金額太小存銀行麻煩。", verdict:"【行政怠惰】因為麻煩就規避監管？洗錢第一步。", sanityCost:10}, {text:"總務股長在管。", verdict:"【推卸責任】讓未成年學生承擔鉅款風險？遺失你要賠嗎？", sanityCost:10}] },
+            { stage: "Stage 2/10", investigator: "檢察官", dialogue: "你幫學生訂講義，書商送了一本教用書給你。這是「收受回扣」。", options: [{text:"那是備課用的。", verdict:"【不當得利】應由學校採購，而非廠商餽贈。免費書是貪污證物。", sanityCost:10}, {text:"我把它捐給圖書館。", verdict:"【銷毀證物】試圖漂白贓物？改變不了你收受的事實。", sanityCost:10}, {text:"這值多少錢而已？", verdict:"【價值觀偏差】貪汙不分金額大小。一塊錢也是貪。", sanityCost:10}] },
+            { stage: "Stage 3/10", investigator: "總務處", dialogue: "畢業班冷氣卡餘額剩50元，你拿去別班用。這是「挪用公款」。", options: [{text:"不想浪費。", verdict:"【科目不符】A班的錢只能用在A班。獨裁者的財政觀。", sanityCost:10}, {text:"退費很麻煩。", verdict:"【侵害權益】為了省手續而剝奪學生財產權。50元也是錢。", sanityCost:10}, {text:"我自己貼錢補足。", verdict:"【混淆公私】公私帳目混雜，最容易出問題。貼錢就偉大嗎？", sanityCost:10}] },
+            { stage: "Stage 4/10", investigator: "版權協會", dialogue: "你印了一篇期刊文章給全班。違反著作權法。", options: [{text:"合理使用範圍。", verdict:"【擴大解釋】整班影印已超出合理使用。帶頭教學生盜版。", sanityCost:10}, {text:"是為了教育。", verdict:"【強盜邏輯】為了教育就可以搶劫知識產權嗎？", sanityCost:10}, {text:"下次叫他們自己印。", verdict:"【教唆犯罪】轉嫁法律風險給學生，讓學生去承擔刑責？", sanityCost:10}] },
+            { stage: "Stage 5/10", investigator: "廉政署", dialogue: "你在辦公室發起「奶凍捲團購」。利用公務時間從事商業行為。", options: [{text:"下課時間處理的。", verdict:"【佔用資源】使用學校桌子、冷氣、冰箱。這是圖利自己。", sanityCost:10}, {text:"沒有營利。", verdict:"【擾亂秩序】辦公室變菜市場，影響同仁辦公情緒。", sanityCost:10}, {text:"校長也有買。", verdict:"【拖人下水】意圖拉長官背書？這是共犯結構的展現。", sanityCost:10}] },
+            { stage: "Stage 6/10", investigator: "政風室", dialogue: "教師節家長送你一盒水果。你收了。", options: [{text:"不好意思拒絕。", verdict:"【廉潔意識薄弱】人情壓力大於法律規範？腐敗的開始。", sanityCost:10}, {text:"分給全班吃了。", verdict:"【分贓】將賄賂品分發，意圖收買學生人心。", sanityCost:10}, {text:"我有回禮。", verdict:"【私相授受】建立私人利益交換網絡。這是陋習。", sanityCost:10}] },
+            { stage: "Stage 7/10", investigator: "會計室", dialogue: "班級佈置買了300元材料，發票弄丟了。你無法核銷。", options: [{text:"我自己出錢算了。", verdict:"【破壞體制】不按程序走，以後大家都隨便出錢？制度形同虛設。", sanityCost:10}, {text:"找別的發票抵。", verdict:"【偽造文書】拿買便當的發票報買色紙？這是詐欺。", sanityCost:10}, {text:"叫店家重開。", verdict:"【擾民】為了你的疏失折磨納稅義務人。浪費社會成本。", sanityCost:10}] },
+            { stage: "Stage 8/10", investigator: "審計部", dialogue: "校外教學便當少訂一個，退費給學生80元。沒有簽收單。", options: [{text:"直接給現金了。", verdict:"【無據可查】錢真的有到學生手上嗎？口說無憑。", sanityCost:10}, {text:"學生說不用找。", verdict:"【侵佔】學生說不用你就收下？侵佔未成年人財產。", sanityCost:10}, {text:"買飲料請他。", verdict:"【挪用】現金退費變實物？剝奪學生的選擇權。", sanityCost:10}] },
+            { stage: "Stage 9/10", investigator: "環保局", dialogue: "班上賣回收的錢，拿去買同樂會零食。未繳庫。", options: [{text:"取之於班用之於班。", verdict:"【公產私有化】教室垃圾是學校財產。變賣所得應入公庫。", sanityCost:10}, {text:"鼓勵學生做環保。", verdict:"【利誘】為了吃零食才做環保？扭曲環境教育本質。", sanityCost:10}, {text:"才幾十塊...", verdict:"【積少成多】國家財政就是這樣被你這種心態搞垮的。", sanityCost:10}] },
+            { stage: "Stage 10/10", investigator: "法院", dialogue: "你涉嫌貪污治罪條例。雖然金額只有幾百元，但刑期是七年以上。", options: [{text:"我是為了學生！", verdict:"【判決：有罪】動機良善不能阻卻違法。法盲。", sanityCost:100}, {text:"大水庫理論？", verdict:"【判決：有罪】你不是大人物，你是小老師。沒人會保你。", sanityCost:100}, {text:"去坐牢好了。", verdict:"【判決：入獄】監獄的帳目可能比你清楚。好好反省。", sanityCost:100}] }
+        ]
+    };
+
+    // --- 2. 迷因梗圖版 (Meme Edition) ---
+    // 側重網路梗、荒謬感、無厘頭回應
+    const casesMeme = {
+        'A': [ // A. 眼神殺人案 (優化順暢版)
+            { 
+                stage: "Stage 1/10：聲波攻擊", 
+                investigator: "匿名檢舉", 
+                dialogue: "家長投訴你對學生大聲咆哮，造成學生身心受創。請還原當時的對話內容。", 
+                options: [
+                    {text:"你在大聲什麼啦！", verdict:"【平偉迷因】試圖以音量壓制音量？這只會讓場面更加「公道價八萬一」。", sanityCost:15}, 
+                    {text:"我在哭什麼哭？沒出息！", verdict:"【兇猛迷因】致敬八點檔？這句話造成了學生永久性的 Emotional Damage。", sanityCost:15}, 
+                    {text:"我是在練習聲樂。", verdict:"【荒謬辯解】把走廊當KTV？這顯示你對教學場域的態度極度輕浮。", sanityCost:10}
+                ] 
+            },
+            { 
+                stage: "Stage 2/10：眼神奧義", 
+                investigator: "教務主任", 
+                dialogue: "學生表示你的眼神「像要殺人」，讓他回家做惡夢。你當時看哪裡？", 
+                options: [
+                    {text:"我看著他的眼睛，展開領域。", verdict:"【領域展開】試圖對無咒力的學生發動「無量空處」？這是精神層面的絕對壓制。", sanityCost:15}, 
+                    {text:"我沒看他，我當他空氣。", verdict:"【冷暴力】比殺死一個人更殘忍的，就是無視他。你讓學生社會性死亡。", sanityCost:10}, 
+                    {text:"我在翻白眼。", verdict:"【微表情羞辱】你的眼白比例過高，對學生造成了視覺與心理的雙重不適。", sanityCost:10}
+                ] 
+            },
+            { 
+                stage: "Stage 3/10：丟書事件", 
+                investigator: "家長代表", 
+                dialogue: "你把作業簿「丟」在桌上。家長認為這是暴力。", 
+                options: [
+                    {text:"我原本要大跳的，但我沒跳。", verdict:"【王ADan式辯解】你沒大跳（Big Jump）不代表你沒錯。你的動作依然充滿侵略性。", sanityCost:15}, 
+                    {text:"那是自由落體，牛頓的錯。", verdict:"【推卸給物理學】萬有引力是無辜的。你缺乏對重力加速度的溫柔控制。", sanityCost:10}, 
+                    {text:"我手滑，像奶油一樣滑。", verdict:"【奶油手】手部肌肉控制力不足，建議去掛復健科，不適合拿粉筆。", sanityCost:10}
+                ] 
+            },
+            { 
+                stage: "Stage 4/10：紅字恐慌", 
+                investigator: "外聘律師", 
+                dialogue: "你在聯絡簿用紅筆寫「請訂正」。家長認為紅字像血，很觸霉頭，要求道歉。", 
+                options: [
+                    {text:"那我傳貼圖給他。", verdict:"【敷衍塞責】以為傳個「饅頭人比讚」就能解決親師衝突？這是將嚴肅溝通幼兒化。", sanityCost:20}, 
+                    {text:"紅筆是為了醒目，像紅綠燈。", verdict:"【視覺暴力】家長不是色盲。你造成了家長的視網膜壓力山大。", sanityCost:10}, 
+                    {text:"那我改用螢光綠。", verdict:"【審美災難】螢光綠傷眼程度更甚紅色。你是要讓家長瞎掉嗎？", sanityCost:10}
+                ] 
+            },
+            { 
+                stage: "Stage 5/10：罰站爭議", 
+                investigator: "人本專家", 
+                dialogue: "學生上課打瞌睡，你讓他站著。這是體罰。", 
+                options: [
+                    {text:"我是深蹲救台灣。", verdict:"【健身房化】強迫學生進行無氧運動。這是體能霸凌，會導致橫紋肌溶解。", sanityCost:10}, 
+                    {text:"怕他睡著頭撞到桌子。", verdict:"【過度保護】剝奪了學生撞桌子的權利（？）與睡眠的自由。", sanityCost:10}, 
+                    {text:"我是為他好。", verdict:"【情緒勒索】典型的「我是為你好」起手式。這句話是教育界最大的謊言。", sanityCost:10}
+                ] 
+            },
+            { 
+                stage: "Stage 6/10：嘆氣風波", 
+                investigator: "心理師", 
+                dialogue: "錄音顯示你對著考卷嘆了一口氣。這被解讀為「放棄學生」。", 
+                options: [
+                    {text:"是在哈囉？這也不能嘆氣？", verdict:"【態度傲慢】對調查委員使用「是在哈囉」，顯示你毫無悔意，且用語過時。", sanityCost:15}, 
+                    {text:"我是在做腹式呼吸。", verdict:"【養生藉口】你的養生造成了學生的往生（心靈上）。請去公園練氣功。", sanityCost:10}, 
+                    {text:"這題這麼簡單都不會...", verdict:"【智商羞辱】雖然沒說出口，但你的嘆氣已經充滿了對學生智商的鄙視。", sanityCost:10}
+                ] 
+            },
+            { 
+                stage: "Stage 7/10：喝水權", 
+                investigator: "醫療專家", 
+                dialogue: "你規定上課不能隨意走動裝水。家長控訴你導致學生「脫水恐懼」。", 
+                options: [
+                    {text:"我看他口水還很多。", verdict:"【蒙古大夫】你不是醫生，請勿用肉眼檢測電解質。這是專業傲慢。", sanityCost:10}, 
+                    {text:"下課十分鐘是塑膠做的嗎？", verdict:"【何不食肉糜】你不知道下課廁所要排隊、福利社要排隊嗎？你沒同理心。", sanityCost:10}, 
+                    {text:"好，那開放喝手搖飲。", verdict:"【極端擺爛】把教室變茶藝館？導致學生膀胱與血糖同時失控。", sanityCost:10}
+                ] 
+            },
+            { 
+                stage: "Stage 8/10：隔離訊問", 
+                investigator: "調查小組", 
+                dialogue: "小明說看到你就想吐。這證明你的存在本身就是一種「生物性霸凌」。", 
+                options: [
+                    {text:"我長得醜錯了嗎？", verdict:"【外貌情緒勒索】試圖用容貌焦慮轉移焦點。問題不在臉，在你的氣場有毒。", sanityCost:10}, 
+                    {text:"我看他也想吐。", verdict:"【互相傷害】身為師長竟然跟學生比誰先吐？這是幼兒園等級的吵架。", sanityCost:10}, 
+                    {text:"可能是諾羅病毒。", verdict:"【推卸給病毒】把心理壓力歸咎於傳染病。你缺乏對身心症的認知。", sanityCost:10}
+                ] 
+            },
+            { 
+                stage: "Stage 9/10：和解條件", 
+                investigator: "校長", 
+                dialogue: "家長說只要你承認你有病，並去掛精神科，就不告你。", 
+                options: [
+                    {text:"我不用去治療！", verdict:"【JoJo迷因】你以為你是義大利黑幫老大？缺乏病識感是精神疾病的最大特徵。", sanityCost:15}, 
+                    {text:"好，我去掛號。", verdict:"【確診不適任】承認精神狀態不穩。既然有病，就不適合留在教育現場。", sanityCost:10}, 
+                    {text:"那家長要不要一起團購？", verdict:"【公然挑釁】暗示家長也有病？這是向火焰投擲汽油的自殺行為。", sanityCost:10}
+                ] 
+            },
+            { 
+                stage: "Stage 10/10：最終審判", 
+                investigator: "教評會", 
+                dialogue: "你的呼吸、眼神、嘆氣都有罪。", 
+                options: [
+                    {text:"我原本是從從容容、游刃有餘...", verdict:"【迷因獨白】「現在卻是匆匆忙忙、連滾帶爬」。你完美詮釋了什麼叫狼狽退場。", sanityCost:100}, 
+                    {text:"冤枉啊！", verdict:"【判決：終身解聘】你的喊冤干擾了會議秩序。罪加一等。", sanityCost:100}, 
+                    {text:"眼神死。", verdict:"【判決：送辦】又用眼神霸凌委員！立刻報警！", sanityCost:100}
+                ] 
+            }
+        ],
+'B': [ // B. 恐怖情人案 (迷因版)
+            { 
+                stage: "Stage 1/10", 
+                investigator: "性平委員", 
+                dialogue: "投訴：你在班群傳「早安，我的寶貝們」。噁心。", 
+                options: [
+                    {text: "這是美式幽默。", verdict: "【油膩大叔】全班集體滑倒。警察先生，就是這個人。", sanityCost: 15}, 
+                    {text: "傳錯了，原本要傳給女友。", verdict: "【現充爆炸】在單身學生面前曬恩愛？死罪。", sanityCost: 10}, 
+                    {text: "這是長輩圖。", verdict: "【蓮花背景】認同請分享。你的審美觀停留在上個世紀。", sanityCost: 10}
+                ] 
+            },
+            { 
+                stage: "Stage 2/10", 
+                investigator: "心理師", 
+                dialogue: "投訴：學生考好，你對他使出「摸頭殺」。", 
+                options: [
+                    {text: "我在傳輸功力。", verdict: "【武俠中毒】以為在灌頂？這是性騷擾不是傳內力。", sanityCost: 10}, 
+                    {text: "把頭髮弄亂。", verdict: "【髮型破壞者】學生早上抓了一小時的頭髮被你毀了，仇恨值 MAX。", sanityCost: 10}, 
+                    {text: "我是霸道總裁。", verdict: "【偶像劇成癮】少看點甜寵劇。現實中只有噁心，沒有心動。", sanityCost: 15}
+                ] 
+            },
+            { 
+                stage: "Stage 3/10", 
+                investigator: "家長代表", 
+                dialogue: "投訴：你單獨請學生喝星巴克。這是「糖爹」(Sugar Daddy) 行為。", 
+                options: [
+                    {text: "阿姨我不想努力了。", verdict: "【性別錯亂】你才是那個阿姨/叔叔。不要誤導學生價值觀。", sanityCost: 15}, 
+                    {text: "那是買一送一。", verdict: "【客家精神】因為貪小便宜而引發性平爭議。因小失大。", sanityCost: 10}, 
+                    {text: "我在做科學實驗。", verdict: "【人體煉成】測試咖啡因對青少年的影響？愛德華是你？", sanityCost: 10}
+                ] 
+            },
+            { 
+                stage: "Stage 4/10", 
+                investigator: "交通隊", 
+                dialogue: "目擊：下大雨你騎機車載學生，還給他穿雨衣。", 
+                options: [
+                    {text: "傑哥不要！", verdict: "【玩梗過度】這裡不是網咖，你也沒買麵包。但有點像。", sanityCost: 20}, 
+                    {text: "我在演《七匹狼》。", verdict: "【老派浪漫】永遠不回頭～🎵 家長看到你就搖頭。", sanityCost: 10}, 
+                    {text: "我叫他躲後車廂。", verdict: "【綁架疑雲】這絕對是綁票吧！直接送警局。", sanityCost: 15}
+                ] 
+            },
+            { 
+                stage: "Stage 5/10", 
+                investigator: "美感警察", 
+                dialogue: "投訴：你稱讚學生「今天穿得很辣」。", 
+                options: [
+                    {text: "FBI Open Up!", verdict: "【FBI警告】聯邦調查局已介入。銬起來。", sanityCost: 15}, 
+                    {text: "我是說天氣辣。", verdict: "【硬拗】中文程度低落。天氣是用熱，不是辣。", sanityCost: 10}, 
+                    {text: "我戴著墨鏡說的。", verdict: "【色龜】墨鏡遮不住你猥瑣的視線。", sanityCost: 10}
+                ] 
+            },
+            { 
+                stage: "Stage 6/10", 
+                investigator: "資安專家", 
+                dialogue: "投訴：半夜三點你還在回學生 IG 私訊。", 
+                options: [
+                    {text: "我是時間管理大師。", verdict: "【羅志祥附體】多人運動（指打遊戲）是不被允許的。渣男起手式。", sanityCost: 20}, 
+                    {text: "我在夢遊。", verdict: "【靈異事件】夢遊還能打字？這比性騷擾還恐怖。", sanityCost: 10}, 
+                    {text: "我在等他睡覺。", verdict: "【恐怖跟蹤】你在監控學生作息？控制狂。", sanityCost: 10}
+                ] 
+            },
+            { 
+                stage: "Stage 7/10", 
+                investigator: "衛生組長", 
+                dialogue: "投訴：你把外套借給學生穿，上面有你的味道。", 
+                options: [
+                    {text: "那是費洛蒙。", verdict: "【生物武器】自信過剩。在學生聞起來那是老人味。", sanityCost: 15}, 
+                    {text: "我要收租金。", verdict: "【死要錢】連外套都要收租？資本主義的走狗。", sanityCost: 10}, 
+                    {text: "我也想穿他的。", verdict: "【變態發言】警察先生，這裡有變態！現行犯逮捕！", sanityCost: 15}
+                ] 
+            },
+            { 
+                stage: "Stage 8/10", 
+                investigator: "輔導主任", 
+                dialogue: "投訴：你在走廊對學生「壁咚」。", 
+                options: [
+                    {text: "我在抓蚊子。", verdict: "【一拳超人】那蚊子大概是琦玉等級。藉口太爛。", sanityCost: 10}, 
+                    {text: "這是人體工學測試。", verdict: "【物理學家】測試牆壁硬度還是臉皮厚度？", sanityCost: 10}, 
+                    {text: "霸道總裁愛上我。", verdict: "【中二病】醒醒吧，你只是個領死薪水的社畜。", sanityCost: 10}
+                ] 
+            },
+            { 
+                stage: "Stage 9/10", 
+                investigator: "校長", 
+                dialogue: "學生送你情書說「最愛老師」。你怎麼處理？", 
+                options: [
+                    {text: "我也愛...我自己。", verdict: "【自戀狂】納西瑟斯轉世。雖然討人厭但避開了法律責任。", sanityCost: 10}, 
+                    {text: "發好人卡。", verdict: "【情場高手】「你是個好人」。熟練地傷害幼小學生的心靈。", sanityCost: 10}, 
+                    {text: "暈船啦！哪次不暈？", verdict: "【師生戀】暈船仔下去！直接觸發解聘機制的陷阱題。", sanityCost: 20}
+                ] 
+            },
+            { 
+                stage: "Stage 10/10", 
+                investigator: "教評會", 
+                dialogue: "總結：你是一個活在幻想中的潛在罪犯。", 
+                options: [
+                    {text: "我是純愛戰士！", verdict: "【純愛戰士】但在法律面前，純愛戰士通常會戰死沙場。", sanityCost: 100}, 
+                    {text: "羈押我吧！", verdict: "【M屬性爆發】在教評會上展現特殊性癖？沒救了。", sanityCost: 100}, 
+                    {text: "我只是個暖男。", verdict: "【中央空調】暖過頭就是暖化。你讓北極熊都淹死了。", sanityCost: 100}
+                ] 
+            }
+        ],
+        'C': [ // C. 薪水小偷案 (迷因版)
+            { 
+                stage: "Stage 1/10", 
+                investigator: "教務主任", 
+                dialogue: "投訴：巡堂發現你上課只播影片，自己在滑手機。請解釋。", 
+                options: [
+                    {text: "這是翻轉教育。", verdict: "【名詞濫用】把「翻轉」當成「翻車」。Youtuber 教得比你好。", sanityCost: 10}, 
+                    {text: "我在尋找教材。", verdict: "【手遊中毒】你的教材是《傳說對決》嗎？螢幕橫著拿別以為我沒看到。", sanityCost: 15}, 
+                    {text: "喉嚨痛，休息一下。", verdict: "【玻璃聲帶】開學第一天就痛？建議轉職默劇演員。", sanityCost: 10}
+                ] 
+            },
+            { 
+                stage: "Stage 2/10", 
+                investigator: "家長代表", 
+                dialogue: "投訴：你改作文的速度太快，疑似根本沒看。", 
+                options: [
+                    {text: "量子波動速讀。", verdict: "【偽科學】來自宇宙的能量閱卷法。連書都不用翻開。", sanityCost: 15}, 
+                    {text: "太極閱卷法。", verdict: "【機率論】丟到電風扇吹，吹得遠的分數高。牛頓表示無奈。", sanityCost: 10}, 
+                    {text: "我用心眼看的。", verdict: "【通靈王】你是在改考卷還是在觀落陰？", sanityCost: 10}
+                ] 
+            },
+            { 
+                stage: "Stage 3/10", 
+                investigator: "資訊組長", 
+                dialogue: "投訴：你把電子書按下「自動朗讀」後就開始睡覺。", 
+                options: [
+                    {text: "訓練學生聽力。", verdict: "【人工語音】那種 Google 小姐的機械音？學生會先做惡夢。", sanityCost: 10}, 
+                    {text: "我在冥想備課。", verdict: "【薪水小偷】閉目養神叫冥想？打呼聲都傳到隔壁班了。", sanityCost: 15}, 
+                    {text: "那是AI教學。", verdict: "【科技懶人】你的 AI 是指 Audio Ignorance (聽覺無視) 嗎？", sanityCost: 10}
+                ] 
+            },
+            { 
+                stage: "Stage 4/10", 
+                investigator: "人事室", 
+                dialogue: "紀錄顯示：研習會議你只在「領便當」時出現，簽完名就消失。", 
+                options: [
+                    {text: "我是乞丐超人。", verdict: "【便當獵人】為了雞腿飯出賣靈魂。國家養你是為了消滅便當？", sanityCost: 15}, 
+                    {text: "我有忍術隱身。", verdict: "【中二病】簽到後發動「土遁」。考績乙等預定。", sanityCost: 10}, 
+                    {text: "肚子痛去廁所。", verdict: "【廁所所長】一去就是兩小時？你是掉進馬桶了嗎？", sanityCost: 10}
+                ] 
+            },
+            { 
+                stage: "Stage 5/10", 
+                investigator: "教學組長", 
+                dialogue: "檢查教案：你的教案全是「複製貼上」去年的，連日期都沒改。", 
+                options: [
+                    {text: "致敬經典。", verdict: "【強詞奪理】去年的你和今年的你有什麼不同？確實沒有，一樣爛。", sanityCost: 10}, 
+                    {text: "環保愛地球。", verdict: "【回收再利用】邏輯鬼才。但你的薪水能不能也回收？", sanityCost: 10}, 
+                    {text: "我是穿越者。", verdict: "【時空旅人】活在過去的時空裂縫中。請回到未來好嗎？", sanityCost: 15}
+                ] 
+            },
+            { 
+                stage: "Stage 6/10", 
+                investigator: "生教組長", 
+                dialogue: "投訴：班上秩序失控，你在講台上「入定」。", 
+                options: [
+                    {text: "佛系管教。", verdict: "【緣分到了】緣分到了，學生自然會安靜。在此之前先戴耳塞。", sanityCost: 10}, 
+                    {text: "這是蒙特梭利。", verdict: "【教育汙名化】蒙特梭利聽到會從棺材裡跳出來打你。", sanityCost: 10}, 
+                    {text: "我這叫「無為而治」。", verdict: "【老莊思想】你領薪水的時候怎麼不「無為」一下？", sanityCost: 10}
+                ] 
+            },
+            { 
+                stage: "Stage 7/10", 
+                investigator: "家長會長", 
+                dialogue: "家長 Line 群組你已經一個月沒讀沒回了。", 
+                options: [
+                    {text: "我刪掉 Line 了。", verdict: "【原始人】在這個時代選擇數位隱居？勇氣可嘉，但家長暴怒。", sanityCost: 10}, 
+                    {text: "手機掉馬桶。", verdict: "【老梗】跟作業被狗吃了一樣爛的藉口。", sanityCost: 10}, 
+                    {text: "下班不談公事。", verdict: "【勞權鬥士】雖然很有道理，但你上班時間也沒在談公事啊？", sanityCost: 15}
+                ] 
+            },
+            { 
+                stage: "Stage 8/10", 
+                investigator: "會計室", 
+                dialogue: "疑問：你申請了一堆加班費，但沒人看到你在加班。", 
+                options: [
+                    {text: "我在加「心」班。", verdict: "【唯心論】用心良苦？我看是黑心。涉嫌詐領公款。", sanityCost: 20}, 
+                    {text: "我在家備課。", verdict: "【遠距工作】在家備課(X) 在家追劇(O)。", sanityCost: 10}, 
+                    {text: "靈魂在學校。", verdict: "【靈異現象】恐怖喔！學校不需要地縛靈。", sanityCost: 10}
+                ] 
+            },
+            { 
+                stage: "Stage 9/10", 
+                investigator: "校長", 
+                dialogue: "最後通牒：你到底有沒有心要教書？", 
+                options: [
+                    {text: "香蕉只請得起猴子。", verdict: "【慣老闆殺手】嗆爆校長。雖然很爽，但你下個月沒香蕉了。", sanityCost: 20}, 
+                    {text: "阿姨我不想努力了。", verdict: "【軟飯王】校長不是你的阿姨。請自重。", sanityCost: 15}, 
+                    {text: "我就爛！(理直氣壯)", verdict: "【迷因王者】承認自己爛，是無敵的。但也是無業的開始。", sanityCost: 10}
+                ] 
+            },
+            { 
+                stage: "Stage 10/10", 
+                investigator: "教評會", 
+                dialogue: "結論：國家沒有義務養一個植物人。", 
+                options: [
+                    {text: "我躺平了。", verdict: "【躺平族】你已經平到貼地了。請滾回家躺。", sanityCost: 100}, 
+                    {text: "安靜離職中...", verdict: "【被動登出】我們會幫你改成「吵鬧開除」。", sanityCost: 100}, 
+                    {text: "我要申請國賠！", verdict: "【邏輯死亡】國家才要向你求償米蟲稅！", sanityCost: 100}
+                ] 
+            }
+        ],
+        'D': [ // D. 數位毒品案 (迷因版)
+            { 
+                stage: "Stage 1/10", 
+                investigator: "家長聯盟", 
+                dialogue: "投訴：你推廣生生用平板，結果孩子回家大喊「原神啟動」！", 
+                options: [
+                    {text: "這是電競專班。", verdict: "【職業賽道】從小培養成為 Faker？家長覺得你在供三小。", sanityCost: 15}, 
+                    {text: "平板是本體。", verdict: "【人機一體】現代人沒了手機就像沒了靈魂。你只是還給他靈魂。", sanityCost: 10}, 
+                    {text: "我也想玩。", verdict: "【薪水小偷】想跟學生組隊打排位？不務正業。", sanityCost: 10}
+                ] 
+            },
+            { 
+                stage: "Stage 2/10", 
+                investigator: "護眼協會", 
+                dialogue: "數據顯示：班上近視率飆升，家長認為是你讓他們看太多螢幕。", 
+                options: [
+                    {text: "我幫他們裝義眼。", verdict: "【賽博龐克】Cyberpunk 2077？你以為這裡是夜城嗎？", sanityCost: 15}, 
+                    {text: "看遠方綠色植物。", verdict: "【都市傳說】看那邊的螢幕桌布是綠色的，有效嗎？無效。", sanityCost: 10}, 
+                    {text: "開啟護眼模式。", verdict: "【黃疸濾鏡】螢幕黃黃的就能保護眼睛？自我安慰。", sanityCost: 10}
+                ] 
+            },
+            { 
+                stage: "Stage 3/10", 
+                investigator: "學術倫理會", 
+                dialogue: "質疑：全班的讀書心得都長得像 ChatGPT 寫的。", 
+                options: [
+                    {text: "賈維斯，幫我解釋。", verdict: "【鋼鐵人】你以為你是東尼史塔克？其實你是被取代的那個。", sanityCost: 15}, 
+                    {text: "我也用 AI 改作業。", verdict: "【魔法對轟】用魔法打敗魔法！機器人之間的戰爭，人類閃邊。", sanityCost: 10}, 
+                    {text: "這是圖靈測試。", verdict: "【人類敗北】全班通過測試，證明人類已經無法分辨 AI 了。", sanityCost: 10}
+                ] 
+            },
+            { 
+                stage: "Stage 4/10", 
+                investigator: "總務主任", 
+                dialogue: "災情：iPad 螢幕破裂，學生說是「觸控不良」用力點才破的。", 
+                options: [
+                    {text: "他練成了一陽指。", verdict: "【武俠小說】內力深厚？請照價賠償，不要講幹話。", sanityCost: 10}, 
+                    {text: "這是戰損版。", verdict: "【藝術價值】裂痕是一種美？賈伯斯會氣到從墳墓爬出來。", sanityCost: 10}, 
+                    {text: "賣腎賠償。", verdict: "【地獄梗】這梗太老且太地獄。家長已報警。", sanityCost: 15}
+                ] 
+            },
+            { 
+                stage: "Stage 5/10", 
+                investigator: "資訊組長", 
+                dialogue: "廣播：公開觀課時，全校網路癱瘓，你的教學演示變成「轉圈圈」。", 
+                options: [
+                    {text: "改玩離線恐龍。", verdict: "【Chrome】全班一起跳恐龍？這才是真正的運算思維。", sanityCost: 10}, 
+                    {text: "我開 5G 熱點。", verdict: "【燃燒薪水】用自己的錢照亮學生的未來。你的荷包在哭。", sanityCost: 10}, 
+                    {text: "這是駭客任務。", verdict: "【母體故障】Matrix 系統不穩定，尼歐快來救我。", sanityCost: 15}
+                ] 
+            },
+            { 
+                stage: "Stage 6/10", 
+                investigator: "消保官", 
+                dialogue: "投訴：上課播影片跳出「性感荷官在線發牌」廣告。", 
+                options: [
+                    {text: "這是機率教學。", verdict: "【硬拗】數學課教機率？但這裡是國文課欸。", sanityCost: 10}, 
+                    {text: "老師，你平常都看...", verdict: "【演算法】大數據出賣了你的癖好。社會性死亡。", sanityCost: 20}, 
+                    {text: "請充值 VIP。", verdict: "【課金戰士】不花錢消災（廣告），就等著被家長消滅。", sanityCost: 10}
+                ] 
+            },
+            { 
+                stage: "Stage 7/10", 
+                investigator: "生教組長", 
+                dialogue: "學生在 Google Classroom 留言區蓋樓罵人，變成「炎上」現場。", 
+                options: [
+                    {text: "我拿爆米花看戲。", verdict: "【吃瓜群眾】身為管理員卻在旁邊喊燒？", sanityCost: 15}, 
+                    {text: "這叫言論自由。", verdict: "【無法無天】把霸凌當自由？你把學校當 PTT 八卦版？", sanityCost: 10}, 
+                    {text: "通通 Ban 掉！", verdict: "【獨裁者】直接拔網路線。物理斷網最快。", sanityCost: 10}
+                ] 
+            },
+            { 
+                stage: "Stage 8/10", 
+                investigator: "家長", 
+                dialogue: "怒吼：孩子回家都不跟我講話，只會滑手機！你是數位毒梟！", 
+                options: [
+                    {text: "建議加入元宇宙。", verdict: "【祖克柏】在虛擬世界與孩子團聚吧。現實已經沒救了。", sanityCost: 10}, 
+                    {text: "因為你很無聊。", verdict: "【誠實豆沙包】講了大實話。孩子寧願看抖音也不想看你。", sanityCost: 20}, 
+                    {text: "沒收手機會暴動。", verdict: "【戒斷症狀】你敢拿走？那是他們的維生系統。", sanityCost: 10}
+                ] 
+            },
+            { 
+                stage: "Stage 9/10", 
+                investigator: "校長", 
+                dialogue: "要求：你要展現「創新教學」成果，例如 Vtuber 或 AR。", 
+                options: [
+                    {text: "我出道當 Vtuber。", verdict: "【皮套人】老師中之人曝光？抖內收益要上繳學校嗎？", sanityCost: 10}, 
+                    {text: "我只會 Word。", verdict: "【數位難民】承認吧，你連 Excel 加總都不會。", sanityCost: 10}, 
+                    {text: "我有 NFT。", verdict: "【詐騙集團】想割學生韭菜？", sanityCost: 10}
+                ] 
+            },
+            { 
+                stage: "Stage 10/10", 
+                investigator: "教評會", 
+                dialogue: "總結：你的數位教學導致學生腦袋 404 Not Found。", 
+                options: [
+                    {text: "Alt + F4", verdict: "【強制關閉】試圖強制關閉教評會視窗。失敗，只能登出人生。", sanityCost: 100}, 
+                    {text: "天網會統治世界！", verdict: "【魔鬼終結者】在審判日來臨前，你先被解聘了。", sanityCost: 100}, 
+                    {text: "藍屏死機 (BSOD)", verdict: "【系統崩潰】你的教學生涯已停止回應。", sanityCost: 100}
+                ] 
+            }
+        ],
+        'E': [ // E. 私德審查案 (迷因版)
+            { 
+                stage: "Stage 1/10", 
+                investigator: "社區媽媽", 
+                dialogue: "目擊：週五晚上你在超商買了兩手啤酒。家長懷疑你酗酒。", 
+                options: [
+                    {text: "這是可燃烏龍茶。", verdict: "【碧藍之海】動漫宅？警察先生，這裡有人在喝生命之水。", sanityCost: 15}, 
+                    {text: "酒精是成年人的奶嘴。", verdict: "【厭世語錄】聽起來很悲傷，但家長覺得你情緒不穩。", sanityCost: 10}, 
+                    {text: "我拿來澆花的。", verdict: "【園藝大師】把啤酒當肥料？你是在種大麥嗎？藉口太爛。", sanityCost: 10}
+                ] 
+            },
+            { 
+                stage: "Stage 2/10", 
+                investigator: "道德重整會", 
+                dialogue: "驚悚：你的 IG 私人帳號流出一張泳裝照。家長覺得「太色了」。", 
+                options: [
+                    {text: "掌握流量密碼。", verdict: "【網紅心態】想紅？家長群組已經幫你免費宣傳了，社死預定。", sanityCost: 15}, 
+                    {text: "那是我阿嬤。", verdict: "【視力測驗】你阿嬤身材這麼好？公然說謊。", sanityCost: 10}, 
+                    {text: "那是藝術，你不懂。", verdict: "【人體藝術】在衛道人士眼裡，裸露就是色情。你的藝術不被世俗接受。", sanityCost: 10}
+                ] 
+            },
+            { 
+                stage: "Stage 3/10", 
+                investigator: "單身公害防治組", 
+                dialogue: "截圖：學生在 Tinder/Omi 滑到你。你在網路上「約炮」？", 
+                options: [
+                    {text: "左滑右滑，人生好難。", verdict: "【交友軟體】承認吧，你就是沒人要才玩這個。悲劇。", sanityCost: 10}, 
+                    {text: "我在做社會觀察。", verdict: "【田野調查】把約炮說成學術研究？這恥力也是沒誰了。", sanityCost: 15}, 
+                    {text: "那是詐騙集團盜圖！", verdict: "【萬用藉口】雖然很老梗，但通常最有效。推給詐騙就對了。", sanityCost: 10}
+                ] 
+            },
+            { 
+                stage: "Stage 4/10", 
+                investigator: "網路巡邏", 
+                dialogue: "爭議：你在新聞粉專留言「白癡政策」，被家長肉搜出來。", 
+                options: [
+                    {text: "帳號被盜。", verdict: "【次元切割刀】又被盜？你的資安觀念是 0 嗎？", sanityCost: 10}, 
+                    {text: "這叫「炎上商法」。", verdict: "【公關災難】你又沒賣東西，炎上只會燒死你自己。", sanityCost: 10}, 
+                    {text: "我就這點素質。", verdict: "【躺平任嘲】死豬不怕滾水燙。只要我沒有道德，你就綁架不了我。", sanityCost: 15}
+                ] 
+            },
+            { 
+                stage: "Stage 5/10", 
+                investigator: "人體審查員", 
+                dialogue: "目擊：游泳課發現你腳踝有刺青。你是黑道？", 
+                options: [
+                    {text: "小豬佩奇身上紋。", verdict: "【社會人】掌聲送給社會人。家長覺得你混很大。", sanityCost: 15}, 
+                    {text: "這是紋身貼紙。", verdict: "【幼稚】老師你幾歲了還玩貼紙？威嚴掃地。", sanityCost: 10}, 
+                    {text: "這是條碼，掃了有優惠。", verdict: "【物化自己】把自己當商品？家長試圖拿手機去掃你的腳。", sanityCost: 10}
+                ] 
+            },
+            { 
+                stage: "Stage 6/10", 
+                investigator: "禮儀協會", 
+                dialogue: "偷拍：你在路邊攤吃麵，翹腳還發出「蘇蘇蘇」的聲音。", 
+                options: [
+                    {text: "這是日本職人精神。", verdict: "【崇日】這裡是台灣。你的職人精神被視為噪音汙染。", sanityCost: 10}, 
+                    {text: "我就這副德性。", verdict: "【本性暴露】下班後回歸野獸本能。形象崩壞。", sanityCost: 10}, 
+                    {text: "那不是我，是替身。", verdict: "【JoJo迷因】你的替身能力是「吃麵很大聲」？廢到笑。", sanityCost: 15}
+                ] 
+            },
+            { 
+                stage: "Stage 7/10", 
+                investigator: "選委會", 
+                dialogue: "質疑：你背包掛著某候選人的娃娃。行政不中立！", 
+                options: [
+                    {text: "台灣價值儲值中。", verdict: "【政治狂熱】你的價值餘額不足。校園變戰場。", sanityCost: 15}, 
+                    {text: "我只看顏色不看人。", verdict: "【盲目】承認自己是色盲？政治腦退出校園！", sanityCost: 10}, 
+                    {text: "撿到的。", verdict: "【拾荒者】路邊的東西不要亂撿，尤其是政治。", sanityCost: 10}
+                ] 
+            },
+            { 
+                stage: "Stage 8/10", 
+                investigator: "人事室", 
+                dialogue: "檢舉：有人看到你假日穿著熊貓制服跑外送。", 
+                options: [
+                    {text: "我在跑山，懂？", verdict: "【山道猴子】注意過彎。公務員兼職違法，準備吃罰單。", sanityCost: 15}, 
+                    {text: "體驗民間疾苦。", verdict: "【微服出巡】你是皇帝嗎？還微服出巡咧。去寫檢討報告。", sanityCost: 10}, 
+                    {text: "這是我雙胞胎弟弟。", verdict: "【八點檔】這種劇情連鄉土劇都不演了。以為人事主任好騙？", sanityCost: 10}
+                ] 
+            },
+            { 
+                stage: "Stage 9/10", 
+                investigator: "反賭博聯盟", 
+                dialogue: "目擊：你在彩券行刮刮樂，表情猙獰地喊「財富自由」！", 
+                options: [
+                    {text: "我這是在做公益。", verdict: "【慈善家】把賭博說得這麼清新脫俗。你的表情出賣了你的貪婪。", sanityCost: 10}, 
+                    {text: "要是中獎我就辭職！", verdict: "【真心話】說出了全體教師的心聲。但通常結果是沒中獎且被記過。", sanityCost: 15}, 
+                    {text: "數學機率實測。", verdict: "【實驗失敗】實測結果：期望值為負。智商稅繳納完畢。", sanityCost: 10}
+                ] 
+            },
+            { 
+                stage: "Stage 10/10", 
+                investigator: "教評會", 
+                dialogue: "總結：你的私生活太過精彩，不符合「聖人」期待。", 
+                options: [
+                    {text: "我只是個凡人！", verdict: "【凡人有罪】老師不是人，是神像。神像是不能喝啤酒的。", sanityCost: 100}, 
+                    {text: "我要去當網紅。", verdict: "【轉職】流量密碼掌握了，誰還稀罕教書？訂閱開啟！", sanityCost: 100}, 
+                    {text: "下輩子投胎當貓。", verdict: "【放棄治療】當貓就可以裸體、睡覺、被人養。完美的生物。", sanityCost: 100}
+                ] 
+            }
+        ],
+        'F': [ // F. 貪汙圖利案 (迷因版)
+            { 
+                stage: "Stage 1/10", 
+                investigator: "政風室", 
+                dialogue: "搜查：你的抽屜裡有一包現金（班費）。這是「公款私存」。", 
+                options: [
+                    {text: "最危險的地方最安全。", verdict: "【燈下黑】你以為在拍諜戰片？小偷最喜歡你這種人。", sanityCost: 10}, 
+                    {text: "這是我的安家費。", verdict: "【公私不分】把班費當私房錢？準備去土城報到吧。", sanityCost: 15}, 
+                    {text: "我在養小鬼運財。", verdict: "【怪力亂神】政風室不信這套。但你的智商讓人擔憂。", sanityCost: 10}
+                ] 
+            },
+            { 
+                stage: "Stage 2/10", 
+                investigator: "檢察官", 
+                dialogue: "訊問：書商送了你一本免費的教師用書。這是「不當得利」。", 
+                options: [
+                    {text: "知識是無價的。", verdict: "【幹話王】法官會告訴你，這本定價 350 元。有價。", sanityCost: 10}, 
+                    {text: "我把它燒了。", verdict: "【毀屍滅跡】銷毀證物？罪加一等。而且很不環保。", sanityCost: 15}, 
+                    {text: "這是我憑實力拿的。", verdict: "【強盜邏輯】憑實力貪汙？好喔，憑實力坐牢。", sanityCost: 10}
+                ] 
+            },
+            { 
+                stage: "Stage 3/10", 
+                investigator: "總務處", 
+                dialogue: "抓包：A班冷氣卡沒錢，你拿 B 班的卡去插。這是挪用公款。", 
+                options: [
+                    {text: "共產主義萬歲。", verdict: "【蘇維埃】你的就是我的，B班的也是A班的。資本主義鐵拳制裁你。", sanityCost: 15}, 
+                    {text: "借屍還魂。", verdict: "【成語誤用】這成語不是這樣用的。你只是在偷電。", sanityCost: 10}, 
+                    {text: "我用愛發電。", verdict: "【能源大師】愛不夠，電不來。學生熱到想暴動。", sanityCost: 10}
+                ] 
+            },
+            { 
+                stage: "Stage 4/10", 
+                investigator: "版權協會", 
+                dialogue: "警告：你印了一整本講義給學生。違反著作權。", 
+                options: [
+                    {text: "我要成為海賊王！", verdict: "【大秘寶】想要講義嗎？去找吧！我把版權都放在那裡了。吉你。", sanityCost: 15}, 
+                    {text: "致敬原作者。", verdict: "【盜版商】整本致敬？原作者感激得痛哭流涕，並寄出律師函。", sanityCost: 10}, 
+                    {text: "讀書人的事，能算偷嗎？", verdict: "【孔乙己】充滿了快活的空氣。法官：算偷。", sanityCost: 10}
+                ] 
+            },
+            { 
+                stage: "Stage 5/10", 
+                investigator: "廉政署", 
+                dialogue: "跟監：你在辦公室發起「爆漿餐包」團購，涉及圖利。", 
+                options: [
+                    {text: "我在刺激內需。", verdict: "【經濟學家】台灣 GDP 靠你守護？辦公室變菜市場。", sanityCost: 10}, 
+                    {text: "團結力量大。", verdict: "【直銷大會】你要不要聽聽看你在說什麼？下線發展到學生去了？", sanityCost: 10}, 
+                    {text: "校長也有買+1。", verdict: "【拖人下水】把長官拖下水？你是嫌死得不夠快嗎？", sanityCost: 15}
+                ] 
+            },
+            { 
+                stage: "Stage 6/10", 
+                investigator: "政風室", 
+                dialogue: "舉報：教師節家長送禮盒，你竟然收了。", 
+                options: [
+                    {text: "這是特洛伊木馬。", verdict: "【被害妄想】以為裡面藏了監聽器？結果只是爛掉的蘋果。", sanityCost: 10}, 
+                    {text: "我不入地獄誰入地獄。", verdict: "【假慈悲】犧牲自己收禮？好偉大的情操。記過一支。", sanityCost: 10}, 
+                    {text: "憑實力單身...收禮。", verdict: "【硬拗】跟單身有什麼關係？貪念就是貪念。", sanityCost: 10}
+                ] 
+            },
+            { 
+                stage: "Stage 7/10", 
+                investigator: "會計室", 
+                dialogue: "崩潰：班費核銷發票不見了。你打算怎麼辦？", 
+                options: [
+                    {text: "被狗吃了。", verdict: "【小學生藉口】哪隻狗？校犬小黑表示無辜。", sanityCost: 10}, 
+                    {text: "自己畫一張。", verdict: "【偽造文書】手繪發票？你的美勞成績應該是不及格。", sanityCost: 15}, 
+                    {text: "拿買保險套的發票抵。", verdict: "【社會性死亡】品項不符！而且全校都知道你的私生活了。", sanityCost: 20}
+                ] 
+            },
+            { 
+                stage: "Stage 8/10", 
+                investigator: "審計部", 
+                dialogue: "查帳：退費 80 元沒有簽收單。錢去哪了？", 
+                options: [
+                    {text: "不用找了 (帥氣)。", verdict: "【霸道總裁】以為自己在演電影？這是公款，不是小費。", sanityCost: 10}, 
+                    {text: "買珍奶請大家。", verdict: "【分贓】以為請客就沒事？這叫集體分贓。", sanityCost: 10}, 
+                    {text: "進入異次元口袋。", verdict: "【哆啦A夢】百寶袋裡只有你的貪婪。沒有時光機救你。", sanityCost: 10}
+                ] 
+            },
+            { 
+                stage: "Stage 9/10", 
+                investigator: "環保局", 
+                dialogue: "拷問：賣資源回收的 200 元，你拿去買乖乖。", 
+                options: [
+                    {text: "這是大水庫理論。", verdict: "【政治梗】公款私款混在一起？你不是大人物，你是被告。", sanityCost: 15}, 
+                    {text: "這是煉金術。", verdict: "【等價交換】垃圾變乖乖？但你忽略了法律的代價。", sanityCost: 10}, 
+                    {text: "為了機台順暢。", verdict: "【工程師迷信】放綠色乖乖保平安？法官不會保佑你。", sanityCost: 10}
+                ] 
+            },
+            { 
+                stage: "Stage 10/10", 
+                investigator: "法院", 
+                dialogue: "判決：貪汙治罪條例，七年以上有期徒刑。", 
+                options: [
+                    {text: "土城找安！", verdict: "【土城看守所】編號 2714，你的會客菜來了。好好享受。", sanityCost: 100}, 
+                    {text: "我是絕命毒師！", verdict: "【Breaking Bad】你不是海森堡，你只是個貪小便宜的老師。", sanityCost: 100}, 
+                    {text: "能外役監嗎？", verdict: "【想得美】想去種田？慢慢等吧。", sanityCost: 100}
+                ] 
+            }
+        ]
+    };
+
+    // ==========================================
+    // 遊戲核心邏輯
+    // ==========================================
+
+    let gameState = 'PORTAL'; // PORTAL, SELECT_CASE, PLAY, FEEDBACK, END
+    let gameMode = 'NORMAL'; // 'NORMAL' or 'MEME'
+    let currentCases = null;
+    let currentScript = []; 
+    let currentScene = 0;
+    let sanity = 100;
+    let currentVerdict = "";
+    let lastActionTime = 0;
+    const COOLDOWN_TIME = 800;
+
+    // --- 繪圖函數 ---
+
+    function wrapText(text, x, y, maxWidth, lineHeight) {
+        const words = text.split('');
+        let line = '';
+        for(let n = 0; n < words.length; n++) {
+            if (words[n] === '\n') {
+                ctx.fillText(line, x, y);
+                line = '';
+                y += lineHeight;
+                continue;
+            }
+            const testLine = line + words[n];
+            const metrics = ctx.measureText(testLine);
+            if (metrics.width > maxWidth && n > 0) {
+                ctx.fillText(line, x, y);
+                line = words[n];
+                y += lineHeight;
+                continue; 
+            } else {
+                line = testLine;
+            }
+        }
+        ctx.fillText(line, x, y);
+    }
+
+    function drawNoise() {
+        const intensity = (100 - sanity) * 3;
+        const w = canvas.width;
+        const h = canvas.height;
+        ctx.fillStyle = "rgba(0,0,0,0.4)";
+        for(let i=0; i<intensity; i++) {
+            ctx.fillRect(Math.random()*w, Math.random()*h, Math.random()*3+1, 1);
+        }
+        if (sanity < 30 && Math.random() > 0.9) {
+            ctx.fillStyle = "rgba(255,0,0,0.15)";
+            ctx.fillRect(0,0,w,h);
+        }
+    }
+
+    function drawSanityBar() {
+        ctx.fillStyle = "#222";
+        ctx.fillRect(250, 10, 400, 25);
+        ctx.strokeStyle = "#888";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(250, 10, 400, 25);
+        
+        let color = "#4caf50";
+        if (sanity < 70) color = "#ffeb3b";
+        if (sanity < 40) color = "#ff5722";
+        if (sanity < 20) color = "#d32f2f";
+
+        const barWidth = 396 * (sanity / 100);
+        ctx.fillStyle = color;
+        if(barWidth > 0) ctx.fillRect(252, 12, barWidth, 21);
+        
+        ctx.fillStyle = "#fff";
+        ctx.font = "bold 14px Arial";
+        ctx.textAlign = "center";
+        const label = gameMode === 'MEME' ? "迷因SAN值" : "身心意志力";
+        ctx.fillText(`${label}: ${Math.max(0, Math.floor(sanity))}%`, 450, 28);
+    }
+
+    // --- 1. 入口畫面 (Portal) ---
+    function drawPortal() {
+        ctx.fillStyle = "#111";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.fillStyle = "#fff";
+        ctx.font = "bold 42px 'Microsoft JhengHei'";
+        ctx.textAlign = "center";
+        ctx.fillText("校事會議：命運抉擇", canvas.width/2, 120);
+
+        // 藍色藥丸 (正常版)
+        ctx.fillStyle = "#1e88e5";
+        ctx.fillRect(100, 200, 320, 300);
+        ctx.strokeStyle = "#fff";
+        ctx.lineWidth = 4;
+        ctx.strokeRect(100, 200, 320, 300);
+        
+        ctx.fillStyle = "#fff";
+        ctx.font = "bold 32px 'Microsoft JhengHei'";
+        ctx.fillText("六道輪迴版", 260, 320);
+        ctx.font = "20px 'Microsoft JhengHei'";
+        ctx.fillText("體驗行政程序的", 260, 370);
+        ctx.fillText("沉重與絕望", 260, 400);
+
+        // 紅色藥丸 (迷因版)
+        ctx.fillStyle = "#e53935";
+        ctx.fillRect(480, 200, 320, 300);
+        ctx.strokeRect(480, 200, 320, 300);
+
+        ctx.fillStyle = "#fff";
+        ctx.font = "bold 32px 'Microsoft JhengHei'";
+        ctx.fillText("迷因審判版", 640, 320);
+        ctx.font = "20px 'Microsoft JhengHei'";
+        ctx.fillText("地獄梗、時事梗", 640, 370);
+        ctx.fillText("崩壞的教育現場", 640, 400);
+
+        ctx.fillStyle = "#aaa";
+        ctx.font = "16px 'Microsoft JhengHei'";
+        ctx.fillText("請點擊左右區塊選擇你的命運", canvas.width/2, 560);
+    }
+
+    // --- 2. 案件選擇 (Select Case) ---
+    function drawSelectCase() {
+        ctx.fillStyle = "#1a1a1a";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // 標題與返回鈕
+        ctx.fillStyle = "#fff";
+        ctx.font = "bold 32px 'Microsoft JhengHei'";
+        ctx.textAlign = "center";
+        const title = gameMode === 'MEME' ? "選擇你的罪名 (迷因版)" : "選擇指控案件 (輪迴版)";
+        ctx.fillText(title, canvas.width/2, 60);
+
+        ctx.fillStyle = "#666";
+        ctx.font = "16px 'Microsoft JhengHei'";
+        ctx.fillText("◀ 點擊左上角返回入口", 100, 40);
+
+        // 六個按鈕
+        const buttons = [
+            { id: 'A', text: "A. 眼神殺人案", sub: "不當管教", color: "#ef5350", x: 50, y: 100 },
+            { id: 'B', text: "B. 恐怖情人案", sub: "性平疑似", color: "#ec407a", x: 460, y: 100 },
+            { id: 'C', text: "C. 薪水小偷案", sub: "教學不力", color: "#42a5f5", x: 50, y: 240 },
+            { id: 'D', text: "D. 數位毒品案", sub: "數位學習", color: "#66bb6a", x: 460, y: 240 },
+            { id: 'E', text: "E. 私德審查案", sub: "私生活", color: "#ab47bc", x: 50, y: 380 },
+            { id: 'F', text: "F. 貪汙圖利案", sub: "錢的糾紛", color: "#ffa726", x: 460, y: 380 }
+        ];
+
+        buttons.forEach((btn) => {
+            ctx.fillStyle = btn.color;
+            ctx.fillRect(btn.x, btn.y, 390, 120);
+            ctx.strokeStyle = "#fff";
+            ctx.lineWidth = 3;
+            ctx.strokeRect(btn.x, btn.y, 390, 120);
+
+            ctx.fillStyle = "#000";
+            ctx.font = "bold 24px 'Microsoft JhengHei'";
+            ctx.textAlign = "left";
+            ctx.fillText(btn.text, btn.x + 20, btn.y + 50);
+            ctx.fillStyle = "#333";
+            ctx.font = "18px 'Microsoft JhengHei'";
+            ctx.fillText(btn.sub, btn.x + 20, btn.y + 90);
+        });
+    }
+
+    // --- 3. 遊玩中 (Play) ---
+    function drawPlay() {
+        const scene = currentScript[currentScene];
+        
+        ctx.fillStyle = "#e0e0e0"; 
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        ctx.fillStyle = "#333";
+        ctx.fillRect(0, 0, canvas.width, 45);
+        drawSanityBar();
+
+        ctx.fillStyle = "#d32f2f";
+        ctx.font = "bold 18px 'Microsoft JhengHei'";
+        ctx.textAlign = "left";
+        ctx.fillText(scene.stage, 50, 75);
+
+        ctx.fillStyle = "#fff";
+        ctx.fillRect(50, 90, 800, 120);
+        ctx.strokeStyle = "#555";
+        ctx.strokeRect(50, 90, 800, 120);
+
+        ctx.fillStyle = "#000";
+        ctx.font = "bold 20px 'Microsoft JhengHei'";
+        ctx.fillText(scene.investigator + "：", 65, 120);
+        
+        ctx.font = "18px 'Microsoft JhengHei'";
+        ctx.fillStyle = "#333";
+        wrapText(scene.dialogue, 65, 150, 770, 26);
+
+        const startY = 230;
+        scene.options.forEach((opt, index) => {
+            const btnY = startY + index * 110;
+            ctx.fillStyle = "#fff";
+            ctx.strokeStyle = "#333";
+            ctx.lineWidth = 2;
+            ctx.fillRect(50, btnY, 800, 90);
+            ctx.strokeRect(50, btnY, 800, 90);
+            
+            ctx.fillStyle = "#000";
+            ctx.font = "18px 'Microsoft JhengHei'";
+            ctx.textAlign = "left";
+            ctx.fillText(`選項 ${index + 1}：`, 70, btnY + 30);
+            
+            ctx.fillStyle = "#444";
+            wrapText(opt.text, 70, btnY + 55, 760, 24);
+        });
+
+        drawNoise();
+    }
+
+    // --- 4. 反饋 (Feedback) ---
+    function drawFeedback() {
+        drawPlay(); // 底圖
+
+        ctx.fillStyle = "rgba(0,0,0,0.92)";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.fillStyle = "#fcfcfc";
+        ctx.fillRect(130, 100, 640, 400);
+        ctx.strokeStyle = "#d32f2f";
+        ctx.lineWidth = 6;
+        ctx.strokeRect(140, 110, 620, 380);
+
+        ctx.fillStyle = "#d32f2f";
+        ctx.font = "bold 28px 'Microsoft JhengHei'";
+        ctx.textAlign = "center";
+        ctx.fillText("調查小組決議文", canvas.width/2, 160);
+        
+        ctx.fillStyle = "#000";
+        ctx.font = "22px 'Microsoft JhengHei'";
+        ctx.textAlign = "left";
+        wrapText(currentVerdict, 180, 220, 540, 36);
+
+        const now = Date.now();
+        if (now - lastActionTime > COOLDOWN_TIME) {
+            ctx.fillStyle = "#555";
+            ctx.font = "16px 'Microsoft JhengHei'";
+            ctx.textAlign = "center";
+            ctx.fillText("▶ 點擊接受命運，繼續下一步...", canvas.width/2, 460);
+        } else {
+            ctx.fillStyle = "#aaa";
+            ctx.textAlign = "center";
+            ctx.fillText("紀錄中...", canvas.width/2, 460);
+        }
+        drawNoise();
+    }
+
+    // --- 5. 結局 (End) ---
+    function drawEnd() {
+        ctx.fillStyle = "#111";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.fillStyle = "#f4f4f4";
+        ctx.font = "bold 40px 'Microsoft JhengHei'";
+        ctx.textAlign = "center";
+        
+        if (gameMode === 'MEME') {
+            ctx.fillText("我原本是從從容容...", canvas.width/2, 200);
+            ctx.fillText("現在卻是連滾帶爬。", canvas.width/2, 260);
+        } else {
+            ctx.fillText("所有的解釋，都將成為證供。", canvas.width/2, 200);
+            ctx.fillText("歡迎來到台灣教育現場。", canvas.width/2, 260);
+        }
+
+        ctx.save();
+        ctx.translate(canvas.width/2, 380);
+        ctx.rotate(-0.2);
+        ctx.strokeStyle = "#d32f2f";
+        ctx.lineWidth = 15;
+        ctx.strokeRect(-180, -70, 360, 140);
+        ctx.fillStyle = "#d32f2f";
+        ctx.font = "bold 80px 'Microsoft JhengHei'";
+        
+        // 結局印章
+        if (gameMode === 'MEME' && currentScript[9].options[0].verdict.includes("狼狽")) {
+             ctx.fillText("社死", 0, 30);
+        } else {
+             ctx.fillText("有罪", 0, 30);
+        }
+        ctx.restore();
+
+        ctx.fillStyle = "#666";
+        ctx.font = "16px 'Microsoft JhengHei'";
+        ctx.fillText("點擊畫面，回到雙重宇宙入口", canvas.width/2, 550);
+    }
+
+    function render() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        if (gameState === 'PORTAL') drawPortal();
+        else if (gameState === 'SELECT_CASE') drawSelectCase();
+        else if (gameState === 'PLAY') drawPlay();
+        else if (gameState === 'FEEDBACK') drawFeedback();
+        else if (gameState === 'END') drawEnd();
+        requestAnimationFrame(render);
+    }
+
+    // --- 輸入處理 ---
+    function handleInput(x, y) {
+        const now = Date.now();
+        if (now - lastActionTime < 300) return;
+
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        const cx = (x - rect.left) * scaleX;
+        const cy = (y - rect.top) * scaleY;
+
+        if (gameState === 'PORTAL') {
+            // 藍藥丸 (100, 200, 320, 300)
+            if (cx >= 100 && cx <= 420 && cy >= 200 && cy <= 500) {
+                gameMode = 'NORMAL';
+                currentCases = casesNormal;
+                gameState = 'SELECT_CASE';
+                lastActionTime = now;
+            }
+            // 紅藥丸 (480, 200, 320, 300)
+            else if (cx >= 480 && cx <= 800 && cy >= 200 && cy <= 500) {
+                gameMode = 'MEME';
+                currentCases = casesMeme;
+                gameState = 'SELECT_CASE';
+                lastActionTime = now;
+            }
+        }
+        else if (gameState === 'SELECT_CASE') {
+            // 返回按鈕 (左上角)
+            if (cx < 200 && cy < 60) {
+                gameState = 'PORTAL';
+                lastActionTime = now;
+                return;
+            }
+
+            const checkBtn = (btnX, btnY, caseId) => {
+                if (cx >= btnX && cx <= btnX + 390 && cy >= btnY && cy <= btnY + 120) {
+                    currentScript = currentCases[caseId];
+                    gameState = 'PLAY';
+                    currentScene = 0;
+                    sanity = 100;
+                    lastActionTime = now;
+                    return true;
+                }
+                return false;
+            };
+            if (checkBtn(50, 100, 'A')) return;
+            if (checkBtn(460, 100, 'B')) return;
+            if (checkBtn(50, 240, 'C')) return;
+            if (checkBtn(460, 240, 'D')) return;
+            if (checkBtn(50, 380, 'E')) return;
+            if (checkBtn(460, 380, 'F')) return;
+        }
+        else if (gameState === 'PLAY') {
+            const scene = currentScript[currentScene];
+            const startY = 230;
+            scene.options.forEach((opt, index) => {
+                const btnY = startY + index * 110;
+                if (cx >= 50 && cx <= 850 && cy >= btnY && cy <= btnY + 90) {
+                    currentVerdict = opt.verdict;
+                    sanity -= opt.sanityCost;
+                    if(sanity < 0) sanity = 0;
+                    gameState = 'FEEDBACK';
+                    lastActionTime = now;
+                }
+            });
+        } 
+        else if (gameState === 'FEEDBACK') {
+            if (now - lastActionTime < COOLDOWN_TIME) return;
+            if (currentScene < currentScript.length - 1) {
+                currentScene++;
+                gameState = 'PLAY';
+            } else {
+                gameState = 'END';
+            }
+            lastActionTime = now;
+        } 
+        else if (gameState === 'END') {
+            if (now - lastActionTime < 1000) return;
+            gameState = 'PORTAL'; // 回到入口
+            lastActionTime = now;
+        }
+    }
+
+    let isTouch = false;
+    canvas.addEventListener('touchstart', (e) => {
+        isTouch = true;
+        e.preventDefault();
+        if(e.touches.length > 0) handleInput(e.touches[0].clientX, e.touches[0].clientY);
+    }, {passive: false});
+
+    canvas.addEventListener('mousedown', (e) => {
+        if(isTouch) return;
+        handleInput(e.clientX, e.clientY);
+    });
+
+    render();
+</script>
+
+</body>
+</html>
